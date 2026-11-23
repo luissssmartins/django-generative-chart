@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Diagrama Django</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0 auto;
+        max-width: 1280px;
+        padding: 16px;
+        color: #1d1d1f;
+        background: #fff;
+      }
+
+      form {
+        display: grid;
+        gap: 12px;
+        max-width: 640px;
+      }
+
+      label {
+        display: grid;
+        gap: 4px;
+        font-weight: 600;
+      }
+
+      input {
+        font: inherit;
+        padding: 8px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+      }
+
+      button {
+        font: inherit;
+        padding: 10px;
+        border: 0;
+        border-radius: 6px;
+        background: #0b57d0;
+        color: #fff;
+        cursor: pointer;
+      }
+
+      .erro {
+        color: #b3261e;
+        font-weight: 600;
+      }
+
+      .diagrama {
+        overflow-x: auto;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .tabela {
+        overflow-x: auto;
+        margin: 16px 0 40px;
+      }
+
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #e5e5e5;
+        padding: 6px 8px;
+        text-align: left;
+      }
+
+      details pre {
+        background: #f4f4f4;
+        padding: 12px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Diagrama de projeto</h1>
+
+    <form method="post">
+      {% csrf_token %}
+      <label>
+        Pasta do projeto Django
+        <input name="caminho" value="{{ caminho }}" placeholder="/Users/voce/projetos/meu-projeto">
+      </label>
+      <label>
+        Banco de dados (opcional)
+        <input
+          name="banco"
+          type="password"
+          autocomplete="off"
+          placeholder="postgres://usuario:senha@host:5432/banco ou /caminho/db.sqlite3"
+        >
+      </label>
+      <button type="submit">Gerar diagrama</button>
+    </form>
+
+    {% if erro %}
+      <p class="erro">{{ erro }}</p>
+    {% endif %}
+
+    {% for secao in secoes %}
+      <h2>{{ secao.titulo }}</h2>
+      <div class="diagrama" id="diagrama-{{ forloop.counter0 }}"></div>
+
+      <div class="tabela">
+        <table>
+          <thead>
+            <tr>
+              {% for coluna in secao.cabecalho %}
+                <th>{{ coluna }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for linha in secao.linhas %}
+              <tr>
+                {% for valor in linha %}
+                  <td>{{ valor }}</td>
+                {% endfor %}
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="{{ secao.cabecalho|length }}">Nada encontrado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Código Mermaid</summary>
+        <pre>{{ secao.codigo }}</pre>
+      </details>
+    {% endfor %}
+
+    {% if secoes %}
+      {{ codigos|json_script:"codigos" }}
+      <script type="module">
+        import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+
+        mermaid.initialize({ startOnLoad: false, maxTextSize: 10000000, maxEdges: 100000 });
+
+        const codigos = JSON.parse(document.getElementById("codigos").textContent);
+
+        for (const [posicao, codigo] of codigos.entries()) {
+          const container = document.getElementById(`diagrama-${posicao}`);
+          try {
+            const { svg } = await mermaid.render(`svg-${posicao}`, codigo);
+            container.innerHTML = svg;
+          } catch (erro) {
+            container.textContent = `Erro ao desenhar: ${erro.message}`;
+          }
+        }
+      </script>
+    {% endif %}
+  </body>
+</html>
