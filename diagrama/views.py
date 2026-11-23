@@ -37,7 +37,6 @@ class DiagramaView(TemplateView):
         "postgres": "postgresql",
         "postgresql": "postgresql",
         "mysql": "mysql",
-        "sqlite": "sqlite3",
         "oracle": "oracle",
     }
 
@@ -332,21 +331,17 @@ class DiagramaView(TemplateView):
     def get_banco(self, url):
         usuario = senha = host = porta = ""
 
-        if Path(url).expanduser().is_file():
-            engine = "sqlite3"
-            nome_banco = str(Path(url).expanduser())
-        else:
-            url_parseada = urlparse(url)
-            engine = self.bancos.get(url_parseada.scheme.split("+")[0])
+        url_parseada = urlparse(url)
+        engine = self.bancos.get(url_parseada.scheme.split("+")[0])
 
-            if not engine:
-                raise ValueError("Use postgres://, mysql://, oracle://")
+        if not engine:
+            raise ValueError("Use postgres://, mysql://, oracle://")
 
-            nome_banco = unquote(url_parseada.path[1:])
-            usuario = unquote(url_parseada.username or "")
-            senha = unquote(url_parseada.password or "")
-            host = url_parseada.hostname or ""
-            porta = str(url_parseada.port or "")
+        nome_banco = unquote(url_parseada.path[1:])
+        usuario = unquote(url_parseada.username or "")
+        senha = unquote(url_parseada.password or "")
+        host = url_parseada.hostname or ""
+        porta = str(url_parseada.port or "")
 
         # if engine == "sqlite3":
         #     arquivo = Path(nome_banco)
